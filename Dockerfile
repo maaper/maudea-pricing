@@ -1,7 +1,7 @@
 # 1. Base image
 FROM node:20-alpine AS base
 # Cache buster - increment to force a full rebuild
-ARG CACHEBUST=20260309v3
+ARG CACHEBUST=20260309v4
 RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 
@@ -63,5 +63,5 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Run prisma db push to create/sync tables in the NAS volume, then start the server
-CMD ["sh", "-c", "npx prisma db push --accept-data-loss --skip-generate && node server.js"]
+# Run prisma db push to create/sync tables, then start the server
+CMD ["sh", "-c", "npx prisma db push --skip-generate && node server.js"]
