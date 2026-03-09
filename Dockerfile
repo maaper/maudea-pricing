@@ -15,8 +15,10 @@ FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Environment variables must be present at build time for static generation
-# For Next.js, it's safer to have dummy variables for the build if not provided
+# For Next.js App Router, it's necessary to have a mocked database to prevent static generation failures.
+ENV DATABASE_URL="file:./dev.db"
+RUN npx prisma db push
+
 RUN npm run build
 
 # 4. Production Runner
