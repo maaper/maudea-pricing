@@ -7,7 +7,8 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./data:/app/data
+      # Carpeta física en tu NAS mapeada al interior del contenedor
+      - /volume1/docker/naudeapricing/data:/app/data
     environment:
       # NextAuth domain setup
       - NEXTAUTH_URL=http://<YOUR_NAS_IP>:3000
