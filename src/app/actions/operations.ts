@@ -225,7 +225,7 @@ export async function saveOperation(data: SaveOperationInput) {
                     data: {
                         name: data.name,
                         type: data.type,
-                        clientId: data.clientId || null,
+                        clientId: targetClientId || null,
                         clientName: data.clientName,
                         status: data.status,
                         date: data.date ? new Date(data.date) : new Date(),
@@ -245,6 +245,7 @@ export async function saveOperation(data: SaveOperationInput) {
             return operation
         })
 
+        console.log(`Operation saved successfully: ${result.id}`);
         revalidatePath('/')
         revalidatePath('/operations')
         return { success: true, data: result }
@@ -258,6 +259,7 @@ export async function saveOperation(data: SaveOperationInput) {
  * Obtiene la lista de presupuestos creados
  */
 export async function getOperations() {
+    console.log(`DEBUG: DATABASE_URL is ${process.env.DATABASE_URL}`);
     try {
         const ops = await prisma.operation.findMany({
             include: {
@@ -266,9 +268,10 @@ export async function getOperations() {
             },
             orderBy: { updatedAt: 'desc' }
         })
+        console.log(`DEBUG: Found ${ops.length} operations`);
         return { success: true, data: ops }
     } catch (error) {
-        console.error('Error fetching operations:', error)
+        console.error('Error fetching operations:', error);
         return { success: false, error: 'Error al obtener presupuestos' }
     }
 }
