@@ -46,10 +46,14 @@ Below you can find instructions for deploying the app using `docker-compose.yml`
    NEXTAUTH_URL="http://your-nas-ip:3000"
    NEXTAUTH_SECRET="some-random-strong-secret"
    ```
-2. Make sure you create a persistent directory in your host system (e.g., `./data` on your NAS) where the SQLite database will be mounted.
-3. Run:
+2. **Create the Database Folder on your NAS**:
+   - Open **File Station** in your Synology interface.
+   - Navigate to `/volume1/docker/` (or your primary Docker volume).
+   - Create a folder named `naudeapricing` (it must match the docker-compose mapping).
+   - Inside that folder, create another folder named `data`. The final path should be exactly `/volume1/docker/naudeapricing/data`.
+3. Start the container stack using Container Manager / Portainer, or via SSH:
    ```bash
-   docker-compose up -d
+   docker-compose up -d --build
    ```
 The app will bind by default to port `3000`.
 
