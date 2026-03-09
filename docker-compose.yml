@@ -1,5 +1,5 @@
 services:
-  naudea-pricing:
+  naudea-pricing-app:
     build: .
     container_name: naudea_pricing_web
     ports:
