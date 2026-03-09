@@ -1,0 +1,173 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------
+// MODELOS DE CONFIGURACIÓN GLOBAL
+// ---------------------------------------------------------
+
+model Setting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ---------------------------------------------------------
+// COSTES DE ESTRUCTURA (Gastos fijos anualizados)
+// ---------------------------------------------------------
+
+model StructureCost {
+  id           String @id @default(cuid())
+  name         String
+  annualAmount Float
+  description  String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ---------------------------------------------------------
+// COMPONENTES DE COSTE (Biblioteca de precios por unidad)
+// ---------------------------------------------------------
+
+model CostComponent {
+  id         String @id @default(cuid())
+  name       String
+  unitCost   Float
+  unitType   String // p. ej. "hora", "unidad", "km"
+  category   String // p. ej. "Personal", "Material", "Desplazamiento"
+  
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  operationItems OperationCostItem[]
+}
+
+// ---------------------------------------------------------
+// CLIENTES (BBDD de clientes para autocompletar)
+// ---------------------------------------------------------
+
+model Client {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  taxId     String?  // NIF/CIF opcional
+  email     String?
+  phone     String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  operations Operation[]
+}
+
+// ---------------------------------------------------------
+// OPERACIONES (Presupuestos / Cotizaciones)
+// ---------------------------------------------------------
+
+model Operation {
+  id            String   @id @default(cuid())
+  name          String
+  date          DateTime @default(now())
+  
+  // Tipo de operación: "B2B" (Venta de materiales) o "SERVICES" (Prestación de servicios)
+  type          String   @default("SERVICES")
+
+  // Relación con Cliente real (opcional para mantener retrocompatibilidad o presupuestos anónimos)
+  clientId      String?
+  clientName    String?  // Nombre introducido a mano si no se quiere crear cliente formal
+  
+  status        String   @default("DRAFT") // "DRAFT", "APPROVED", "REJECTED"
+  
+  // Parámetros calculados/sugeridos de la operación
+  overheadPct   Float    @default(0.15) // % de estructura
+  marginPct     Float    @default(0.20) // % de margen de beneficio esperado
+  riskPct       Float    @default(0.00) // % de riesgo
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  client        Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  aiSuggestedReasoning String? // Justificación guardada del controlador IA
+
+  items         OperationCostItem[]
+  resultCache   OperationResultCache?
+}
+
+// Líneas de coste dentro de una operación
+model OperationCostItem {
+  id              String         @id @default(cuid())
+  operationId     String
+  costComponentId String?        // Opcional: puede ser un item manual no en la biblioteca
+  
+  name            String
+  unitQuantity    Float
+  
+  // Novedad: Divisas
+  originalCurrency  String   @default("EUR") // "EUR" o "USD"
+  originalCost      Float?   // Si es USD, guardamos aquí el valor en USD original
+  exchangeRate      Float    @default(1.0)   // Tipo de cambio aplicado (EUR/USD) en ese momento
+
+  // En operaciones B2B, diferenciar si es un "Coste Directo del Material" o un "Coste Común de la Operación" (ej. Flete global del pedido)
+  isCommonCost    Boolean        @default(false)
+  
+  // Novedad: Propiedades de importación
+  isImport        Boolean        @default(false)
+  tariffCode      String?        // Código TARIC (Partida Arancelaria)
+  tariffDescription String?      // Descripción literal del capítulo o subpartida arancelaria
+  countryOfOrigin String?        // País de origen
+  tariffPct       Float?         // Porcentaje de arancel aplicado
+  
+  // Desglose de costes unitarios (útil para materiales o servicios complejos)
+  baseUnitCost    Float          @default(0) // Coste base
+  freightCost     Float          @default(0) // Fletes/Transporte
+  insuranceCost   Float          @default(0) // Seguros
+  customsCost     Float          @default(0) // Aduanas (Arancel calculado individualmente, visible como desglose)
+  socialSecurity  Float          @default(0) // Seguros sociales (personal)
+  preventionCost  Float          @default(0) // PRL / Prevención
+  rcInsuranceCost Float          @default(0) // Seguro Responsabilidad Civil
+  otherCosts      Float          @default(0) // Otros
+  
+  // Coste total unitario = suma de los anteriores
+  unitCost        Float          @default(0) 
+  
+  totalCost       Float          // unitQuantity * unitCost
+  
+  operation       Operation      @relation(fields: [operationId], references: [id], onDelete: Cascade)
+  component       CostComponent? @relation(fields: [costComponentId], references: [id], onDelete: SetNull)
+}
+
+// Caché de resultados financieros para visualización rápida y KPIs
+model OperationResultCache {
+  id                String @id @default(cuid())
+  operationId       String @unique
+  
+  totalDirectCost   Float
+  totalOverheadCost Float
+  totalCost         Float  // direct + overhead + risk
+  
+  targetPrice       Float
+  expectedMargin    Float
+  expectedBenefit   Float
+  
+  isTax             Float  // Impuesto sociedades estimado
+  legalReserve      Float  // Reserva legal estimada
+  netBenefit        Float  // Beneficio neto real
+  
+  // JSON (guardado como String en SQLite) indicando el Precio de Venta Sugerido para cada OperationCostItem (ID)
+  itemsCalculatedPrices String? 
+  
+  updatedAt         DateTime @updatedAt
+  
+  operation         Operation @relation(fields: [operationId], references: [id], onDelete: Cascade)
+}

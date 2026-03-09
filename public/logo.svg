@@ -1,0 +1,16 @@
+<svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <clipPath id="circle-clip">
+      <circle cx="250" cy="250" r="250" />
+    </clipPath>
+  </defs>
+  
+  <g clip-path="url(#circle-clip)">
+    <!-- Base green -->
+    <rect width="500" height="500" fill="#4B774E" />
+    <!-- Blue section on right -->
+    <path d="M 500 -100 L 500 600 L 150 600 Z" fill="#407CAB"/>
+  </g>
+  <!-- White N -->
+  <path d="M 110 400 L 180 150 L 250 150 L 310 330 L 360 150 L 430 150 L 370 400 L 300 400 L 240 220 L 180 400 Z" fill="#FFFFFF"/>
+</svg>
