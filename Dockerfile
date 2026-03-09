@@ -17,6 +17,9 @@ COPY . .
 
 # For Next.js App Router, it's necessary to have a mocked database to prevent static generation failures.
 ENV DATABASE_URL="file:./dev.db"
+# NextAuth requires these at build time to successfully optimize static pages
+ENV NEXTAUTH_SECRET="dummy-secret-for-build"
+ENV NEXTAUTH_URL="http://localhost:3000"
 RUN npx prisma db push
 
 RUN npm run build
