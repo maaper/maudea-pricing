@@ -1,5 +1,7 @@
 # 1. Base image
 FROM node:20-alpine AS base
+# Cache buster - increment to force a full rebuild
+ARG CACHEBUST=20260309v3
 RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 
@@ -61,6 +63,5 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Note: since we use SQLite, we must run `npx prisma db push` BEFORE starting
-# server.js to create the tables in the external NAS volume.
-ENTRYPOINT ["./entrypoint.sh"]
+# Run prisma db push to create/sync tables in the NAS volume, then start the server
+CMD ["sh", "-c", "npx prisma db push --accept-data-loss --skip-generate && node server.js"]
